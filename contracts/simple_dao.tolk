@@ -1,36 +1,53 @@
-{/*
-    Create a Simple DAO contract that allows user to vote yes or no
-    The SimpleDao struct is the main storage of the contract.
-    It contains:
-    - queryId: uint32
-    - yesVotes: uint32
-    - noVotes: uint32
-    - totalVotes: uint32
+contract SimpleDao {
+    // Main storage struct
+    struct SimpleDao {
+        queryId: uint32,
+        yesVotes: uint32,
+        noVotes: uint32,
+        totalVotes: uint32
+    }
 
-    The contract has 2 functionalities :
-    - Record a vote
-    - Reset the votes
-    The contract has a yesVotes that is used to identify the yes votes.
-    The contract has a noVotes that is used to identify the no votes.
-    The contract has a totalVotes that is used to identify the total votes.
+    // Input structs
+    struct RecordVote {
+        queryId: uint32,
+        vote: bool
+    }
 
-    There will be 2 structs :
-    - RecordVote : This struct is used to record a vote.
-    - ResetVotes : This struct is used to reset the votes.
+    struct ResetVotes {
+        queryId: uint32
+    }
 
-    The struct definitions are :
-    - RecordVote(queryId: uint32, vote: bool) : 0xF4A2B1C9
-    - ResetVotes(queryId: uint32) : 0xD4E7B328
+    // Storage variable
+    var storage: SimpleDao = SimpleDao(0, 0, 0, 0)
 
-    There will be 1 getter function :
-    - getVotes : This function is used to get the votes. (yesVotes, noVotes, totalVotes)
+    // Function selectors
+    const RECORD_VOTE_SELECTOR: uint32 = 0xF4A2B1C9
+    const RESET_VOTES_SELECTOR: uint32 = 0xD4E7B328
 
-    Helpful Blueprint sdk commands:
-    - npx blueprint build - To build the contract
-    - npx blueprint test tests/SimpleDao.spec.ts - To test the contract
-*/}
+    // Handle internal messages
+    fun onInternalMessage(inMsg: InMessage) {
+        if (inMsg.body.selector == RECORD_VOTE_SELECTOR) {
+            let vote = inMsg.body.decode<RecordVote>()
+            if (vote.queryId == storage.queryId) {
+                if (vote.vote) {
+                    storage.yesVotes = storage.yesVotes + 1
+                } else {
+                    storage.noVotes = storage.noVotes + 1
+                }
+                storage.totalVotes = storage.totalVotes + 1
+            }
+        } elseif (inMsg.body.selector == RESET_VOTES_SELECTOR) {
+            let reset = inMsg.body.decode<ResetVotes>()
+            if (reset.queryId == storage.queryId) {
+                storage.yesVotes = 0
+                storage.noVotes = 0
+                storage.totalVotes = 0
+            }
+        }
+    }
 
-tolk 1.1
-
-fun onInternalMessage(in: InMessage) {
+    // Getter function for votes
+    fun getVotes(): (uint32, uint32, uint32) {
+        return (storage.yesVotes, storage.noVotes, storage.totalVotes)
+    }
 }
